@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html style="height: 100%">
+	<head>
+		<meta charset="utf-8">
+		<title>用电侧需求响应潜力分析平台</title>
+		<link rel = "icon" href="image/xiaohui.ico" type="image/x-icon">
+		<link rel = "shortcut icon" href="image/xiaohui.ico" type="image/x-icon">
+		<link rel = "stylesheet" href="CSS/my_chart.css" type="text/css">
+		<script src="js/echarts.js"></script>
+		<script type="text/javascript" src="js/jquery-3.3.1.min.js"></script>
+	</head>
+
+	<body style="height: 100%; margin: 0; background:url(image/beijing.png); background-size: 105% 105%;">
+<div id="title" style="height: 12%; background:#01042b">
+	<div id="left" class="header" style="width: 50%; float:left"> <h1>用电侧需求响应潜力分析平台</h1></div>
+	<div id="right" class="navbar" style="width: 50%; float:left; position:relative; top:35%">
+		<a href="javascript:void(0);" onclick="system2();" class="right">日前预测</a>
+		<a href="javascript:void(0);" onclick="system();" class="right">全局概览</a>
+	</div>
+</div>
+
+<div id="main" style="height: 88%"></div>
+<div id="weather" style="display:none; position:absolute; left:67%; top:22.5%; width:200px; height:100px; background:url(image/weather/g6.png)"></div>
+<script type="text/javascript">
+	var myChart = echarts.init(document.getElementById('main'), 'dark');
+	function system(){ //加载option
+		$("a:last").addClass("choose");
+		$("a:first").removeClass("choose");
+		myChart.clear();
+		myChart.setOption(option);
+		document.getElementById("weather").style.display = "none";
+	}
+	function system2(){ //加载option2
+		$("a:first").addClass("choose");
+		$("a:last").removeClass("choose");
+		myChart.clear();
+		myChart.setOption(option2);
+		document.getElementById("weather").style.display = "block";
+	}
+	
+	function loadData1() {
+		$.ajax({
+			type : "get",
+			async : false,
+			url : "json/power_curve.json",
+			dataType:'json',
+			success : function(result) {
+				Date.prototype.Format = function(fmt){ 
+					  var o = {   
+					    "M+" : this.getMonth()+1,                 //月份   
+					    "d+" : this.getDate(),                    //日
+					    "h+" : this.getHours(),                   //小时   
+					    "m+" : this.getMinutes(),                 //分   
+					    "s+" : this.getSeconds(),                 //秒   
+					    "q+" : Math.floor((this.getMonth()+3)/3), //季度   
+					    "S"  : this.getMilliseconds()             //毫秒   
+					  };   
+					  if(/(y+)/.test(fmt))   
+					    fmt=fmt.replace(RegExp.$1, (this.getFullYear()+"").substr(4 - RegExp.$1.length));   
+					  for(var k in o)   
+					    if(new RegExp("("+ k +")").test(fmt))   
+					  fmt = fmt.replace(RegExp.$1, (RegExp.$1.length==1) ? (o[k]) : (("00"+ o[k]).substr((""+ o[k]).length)));   
+					  return fmt;   
+				}; 
+				for (var i = 0; i < result["columns"].length; i++){
+					var date = new Date(result["columns"][i] - 28800000);//转换时区8h
+					result["columns"][i] = date.Format("yyyy-MM-dd hh:mm:ss");
+				}
+				p_c = result;
+				return p_c;
+			},
+			error : function(errorMsg) {
+				alert("图表请求数据失败!");
+			}
+		})
+	}
+	function loadData2() {
+		$.ajax({
+			type : "get",
+			async : false,
+			url : "json/E_curve.json",
+			dataType:'json',
+			success : function(result) {
+				e_c = result;
+				return e_c;
+			},
+			error : function(errorMsg) {
+				alert("图表请求数据失败!");
+			}
+		})
+	};
+	function loadData3() {
+		$.ajax({
+			type : "get",
+			async : false,
+			url : "json/mode_tj.json",
+			dataType:'json',
+			success : function(result) {
+				m_tj = result;
+				return m_tj;
+			},
+			error : function(errorMsg) {
+				alert("图表请求数据失败!");
+			}
+		})
+	};
+	function loadData4() {
+		$.ajax({
+			type : "get",
+			async : false,
+			url : "json/K_means_curve.json",
+			dataType:'json',
+			success : function(result) {
+				k_p = result;
+				return k_p;
+			},
+			error : function(errorMsg) {
+				alert("图表请求数据失败!");
+			}
+		})
+	};
+	
+	var time = ['00:00','00:30','01:00','01:30','02:00','02:30','03:00','03:30','04:00','04:30','05:00','05:30','06:00','06:30','07:00','07:30','08:00','08:30','09:00','09:30','10:00','10:30','11:00','11:30','12:00','12:30','13:00','13:30','14:00','14:30','15:00','15:30','16:00','16:30','17:00','17:30','18:00','18:30','19:00','19:30','20:00','20:30','21:00','21:30','22:00','22:30','23:00','23:30'];
+	var p_c = [];
+	loadData1(p_c);
+	var e_c = [];
+	loadData2(e_c);
+	var m_tj = [];
+	loadData3(m_tj);
+	var k_p = [];
+	loadData4(k_p);
+	
+	var option = {
+		title: [{
+			text: '用户负荷曲线',
+			left:'35%',
+			top:'1%',
+			textAlign:'center'
+		}, {
+			text: '用户需求响应潜力',
+			left:'35%',
+			top:'48%',
+			textAlign:'center'
+		}, {
+			text: '用户用电模式统计',
+			right:'9%',
+			top:'1%',
+			textAlign:'center'
+		}, {
+			text: '用户用电模式曲线',
+			right:'9%',
+			top:'48%',
+			textAlign:'center'
+		}],
+		toolbox: {
+			feature: {
+				dataZoom: {
+					yAxisIndex: 'none'
+				},
+				restore: {},
+				saveAsImage: {}
+			},
+			right: '20',
+		},
+		tooltip: {
+			trigger: 'axis',
+			formatter : '{a} <br/> 时间{b} <br/><br/> 负荷 : {c0}kw <br/> 需求响应潜力 :{c1}kw',
+			axisPointer: {
+				type: 'cross',
+				animation: false,
+				label: {
+					backgroundColor: '#505765'
+				}
+			}
+		},
+		axisPointer: {
+			link: {xAxisIndex: [0, 1]}
+		},
+		dataZoom: [{
+			show: true,
+			realtime: true,
+			start: 90,
+			end: 92,
+			xAxisIndex: [0, 1],
+			top: '48%'
+		}, {
+			type: 'inside',
+			realtime: true,
+			start: 90,
+			end: 92,
+			xAxisIndex: [0, 1]
+		}, {
+			type: 'inside',
+			realtime: true,
+			start: 0,
+			end: 100,
+			xAxisIndex: [2]
+		}],
+		grid: [{
+			top: '40',
+			left: '10%',
+			right: '40%',
+			height: '40%'
+		}, {
+			left: '10%',
+			right: '40%',
+			top: '54%',
+			height: '40%'
+		}, {
+			top: '54%',
+			tooltip: {
+				trigger: 'item',
+				formatter : '{a} <br/> 时间{b} <br/><br/> 负荷 : {c}kw'
+			},
+			right: '3%',
+			height: '40%',
+			width: '34%'
+		}],
+		legend: {
+			orient: 'vertical',
+			top: '5%',
+			bottom: '5%',
+			left: '1%',
+			type: 'scroll',
+			selectedMode: 'single',
+			data: (function(){
+					var user = [];
+					for (var i = 0; i < p_c["index"].length; i++){
+						user.push('用户' + p_c["index"][i]) 
+					}
+					return user;
+				})(),
+			selected: (function(){
+					var used = {};
+					for (var i = 0; i < p_c["index"].length; i++){
+						used['用户' + p_c["index"][i]] = i < 1;
+					}
+					return used;
+				})(),
+		},
+		xAxis: [{
+			name: '时间',
+			type: 'category',
+			boundaryGap : false,
+			data: p_c["columns"].slice(0, p_c["columns"].length-48), //
+			show: false
+		}, {
+			gridIndex: 1,
+			name: '时间',
+			type: 'category',
+			boundaryGap : false,
+			data: p_c["columns"].slice(0, p_c["columns"].length-48), //
+			show: true
+		}, {
+			gridIndex: 2,
+			name: '时间',
+			type: 'category',
+			boundaryGap : false,
+			data: time
+		}],
+		yAxis: [{
+			name: '功率(kw)',
+			type: 'value'
+		}, {
+			gridIndex: 1,
+			//name: '功率(kw)',
+			type: 'value'
+		}, {
+			gridIndex: 2,
+			name: '功率(kw)',
+			type: 'value'
+		}],
+		series: (function(){
+			var series = [];
+			for (var i = 0; i < p_c["index"].length; i++){
+				series.push({
+					name :　'用户' + p_c["index"][i],
+					type : 'line',
+					data : p_c["data"][i].slice(0, p_c["columns"].length-48) //
+				}, {
+					name :　'用户' + p_c["index"][i],
+					type : 'line',
+					data : e_c["data"][i].slice(0, p_c["columns"].length-48),  //
+					lineStyle: {width: '1.5'},
+					stack: 'm',
+					areaStyle: {normal: {color: '#000'}},
+					xAxisIndex: 1,
+					yAxisIndex: 1
+				}, {
+					name :　'用户' + p_c["index"][i],
+					type : 'line',
+					lineStyle: {normal: {color: 'rgb(224, 128, 49)'}},
+					data : k_p["data"][i].slice(0,48),
+					symbolSize: '0.5',
+					xAxisIndex: 2,
+					yAxisIndex: 2
+				}, {
+					name :　'用户' + p_c["index"][i],
+					type : 'line',
+					lineStyle: {normal: {color: 'rgb(25, 148, 117)'}},
+					data : k_p["data"][i].slice(48,96),
+					symbolSize: '0.5',
+					xAxisIndex: 2,
+					yAxisIndex: 2
+				}, {
+					name :　'用户' + p_c["index"][i],
+					type : 'line',
+					lineStyle: {normal: {color: 'rgb(37, 198, 252)'}},
+					data : k_p["data"][i].slice(96,144),
+					symbolSize: '0.5',
+					xAxisIndex: 2,
+					yAxisIndex: 2
+				}, {
+					name :　'用户' + p_c["index"][i],
+					type : 'pie',
+					radius: ['15%', '35%'],
+					center: ['80%', '27%'],
+					labelLine:{
+						lenght: 30,
+						length2: 30,
+						lineStyle: {width:2}
+					},
+					label: {
+						fontSize: 18,
+						fontFamily: 'Times New Roman'
+					},
+					data : [
+						{value:m_tj["data"][i].slice(m_tj["columns"].length-2), name:'mode-1', itemStyle:{color: 'rgba(224, 128, 49, 0.9)'}},
+						{value:m_tj["data"][i].slice(m_tj["columns"].length-1), name:'mode-2', itemStyle:{color: 'rgb(25, 148, 117)'}},
+						{value:m_tj["data"][i].slice(m_tj["columns"].length-3), name:'mode-3', itemStyle:{color: 'rgba(37, 198, 252, 0.7)'}}
+					],
+					tooltip : {
+						trigger: 'item',
+						formatter: "{a} <br/>{b} : {d}%"
+					}
+				})
+			}
+			return series;
+		})(),
+	};
+	
+	var option2 = {
+		title: [{
+			text: '负荷曲线预测',
+			left:'35%',
+			top:'1%',
+			textAlign:'center'
+		}, {
+			text: '需求响应潜力预测',
+			left:'35%',
+			top:'48%',
+			textAlign:'center'
+		}, {
+			text: p_c["columns"][p_c["columns"].length-1].slice(0,10),
+			right:'10%',
+			top:'1%',
+			textAlign:'center'
+		}, {
+			text: 'Day :',
+			right:'20.5%',
+			top:'1%',
+			textAlign:'center'
+		}, {
+			text: '用户用电模式曲线',
+			right:'9%',
+			top:'48%',
+			textAlign:'center'
+		}, {
+			text: '星期三',
+			left:'62%',
+			top:'13%'
+		}, {
+			text: '多云转晴',
+			left:'62%',
+			top:'18%'
+		}, {
+			text: '温度：-10.2~1.3℃   风速：2.39~9.76',
+			textStyle: {fontSize: 15},
+			left:'61.5%',
+			top:'32%'
+		}, {
+			text: '湿度：-0.60~0.84    云量：0.32~0.85',
+			textStyle: {fontSize: 15},
+			left:'61.5%',
+			top:'36%'
+		}],
+		toolbox: {
+			feature: {
+				dataZoom: {
+					yAxisIndex: 'none'
+				},
+				restore: {},
+				saveAsImage: {}
+			},
+			right: '20',
+		},
+		tooltip: {
+			trigger: 'axis',
+			formatter : '{a} <br/> 时间{b} <br/><br/> 负荷 : {c0}kw <br/> 需求响应潜力 :{c1}kw',
+			axisPointer: {
+				type: 'cross',
+				animation: false,
+				label: {
+					backgroundColor: '#505765'
+				}
+			}
+		},
+		axisPointer: {
+			link: {xAxisIndex: [0, 1]}
+		},
+		dataZoom: [{
+			type: 'inside',
+			realtime: true,
+			start: 0,
+			end: 100,
+			xAxisIndex: [0, 1]
+		}, {
+			type: 'inside',
+			realtime: true,
+			start: 0,
+			end: 100,
+			xAxisIndex: [2]
+		}],
+		grid: [{
+			top: '40',
+			left: '10%',
+			right: '40%',
+			height: '40%'
+		}, {
+			left: '10%',
+			right: '40%',
+			top: '54%',
+			height: '40%'
+		}, {
+			tooltip: {
+				trigger: 'item',
+				formatter : '{a} <br/> 时间{b} <br/><br/> 负荷 : {c}kw'
+			},
+			top: '54%',
+			right: '3%',
+			height: '40%',
+			width: '34%'
+		}],
+		legend: {
+			orient: 'vertical',
+			top: '5%',
+			bottom: '5%',
+			left: '1%',
+			type: 'scroll',
+			selectedMode: 'single',
+			data: (function(){
+					var user = [];
+					for (var i = 0; i < p_c["index"].length; i++){
+						user.push('用户' + p_c["index"][i]) 
+					}
+					return user;
+				})(),
+			selected: (function(){
+					var used = {};
+					for (var i = 0; i < p_c["index"].length; i++){
+						used['用户' + p_c["index"][i]] = i < 1;
+					}
+					return used;
+				})(),
+		},
+		xAxis: [{
+			name: '时间',
+			type: 'category',
+			boundaryGap : false,
+			data: time,
+			show: false
+		}, {
+			gridIndex: 1,
+			name: '时间',
+			type: 'category',
+			boundaryGap : false,
+			data: time,
+			show: true
+		}, {
+			gridIndex: 2,
+			name: '时间',
+			type: 'category',
+			boundaryGap : false,
+			data: time
+		}],
+		yAxis: [{
+			name: '功率(kw)',
+			type: 'value'
+		}, {
+			gridIndex: 1,
+			//name: '功率(kw)',
+			type: 'value'
+		}, {
+			gridIndex: 2,
+			name: '功率(kw)',
+			type: 'value'
+		}],
+		series: (function(){
+			var series = [];
+			for (var i = 0; i < p_c["index"].length; i++){
+				series.push({
+					name :　'用户' + p_c["index"][i],
+					type : 'line',
+					data : p_c["data"][i].slice(p_c["columns"].length-48, p_c["columns"].length)
+				}, {
+					name :　'用户' + p_c["index"][i],
+					type : 'line',
+					data : e_c["data"][i].slice(p_c["columns"].length-48, p_c["columns"].length),
+					lineStyle: {width: '1.5'},
+					stack: 'm',
+					areaStyle: {normal: {color: '#000'}},
+					xAxisIndex: 1,
+					yAxisIndex: 1
+				}, {
+					show: false,
+					name :　'用户' + p_c["index"][i],
+					type : 'line',
+					lineStyle: {normal: {color: 'rgb(224, 128, 49)'}},
+					data : k_p["data"][i].slice(0,48),
+					symbolSize: '0.5',
+					xAxisIndex: 2,
+					yAxisIndex: 2
+				}, {
+					name :　'用户' + p_c["index"][i],
+					type : 'line',
+					lineStyle: {normal: {color: 'rgb(25, 148, 117)'}},
+					data : k_p["data"][i].slice(48,96),
+					symbolSize: '0.5',
+					xAxisIndex: 2,
+					yAxisIndex: 2
+				}, {
+					name :　'用户' + p_c["index"][i],
+					type : 'line',
+					lineStyle: {normal: {color: 'rgb(37, 198, 252)'}},
+					data : k_p["data"][i].slice(96,144),
+					symbolSize: '0.5',
+					xAxisIndex: 2,
+					yAxisIndex: 2
+				}, {
+					name :　'用户' + p_c["index"][i],
+					type: 'gauge',
+					radius: '35%',
+					center: ['90%', '29%'],
+					startAngle: 180,
+					endAngle: 0,
+					min: 0.5,
+					max: 3.5,
+					splitNumber: 3,
+					axisLine: {
+						lineStyle: {
+							color: [[0.33, 'rgba(224, 128, 49, 0.9)'],[0.67, 'rgb(25, 148, 117)'],[1, 'rgb(37, 198, 252)']],
+							width: 10,
+							shadowColor : '#fff',
+							shadowBlur: 5
+						}
+					},
+					axisLabel: {show: false},
+					splitLine: {
+						length :25,
+						lineStyle: {
+							width:1,
+							color: '#fff'
+						}
+					},
+					title : {
+						textStyle: {
+							fontSize: 20,
+							fontStyle: 'italic',
+							color: '#fff'
+						}
+					},
+					axisTick: {show: false},
+					pointer:{
+						length: '65%',
+						width: 10
+					},
+					detail : {
+						formatter:'mode-{value}',
+						backgroundColor: '#e2dbbe',
+						borderWidth: 1,
+						borderColor: '#fff',
+						shadowColor: '#fff',
+						shadowBlur: 2,
+						offsetCenter: [0, '45%'],
+						fontFamily: 'Times New Roman',
+						fontSize: 20
+					},
+					data: [{value: m_tj["data"][i].slice(m_tj["columns"].length-4), name:'mode'}]
+				})
+			}
+			return series;
+		})(),
+	};
+			
+</script>
+	</body>
+</html>
